@@ -15,7 +15,31 @@ header {
 
 /* Estilos para todos os links dentro do header */
 header a {
-  color:aliceblue;
+  color: aliceblue;
   font-weight: bold;
   text-decoration: none;
+}
+
+main {
+  padding: 1rem;
+}
+/* Ajustando os formatos dos livros, juntando eles em uma linha e
+adicionando bordas */
+.livros {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.livro {
+  border: 1px #404040 solid;
+  margin: 1rem;
+}
+.livro img {
+  width: 100%;
+  max-width: 400px;
+}
+
+.livro-info {
+  padding: 1rem;
 }
