@@ -1,0 +1,182 @@
+import express from 'express';
+import expressAsyncHandler from 'express-async-handler';
+import Pedido from '../models/orderModel.js';
+import Usuario from '../models/userModel.js';
+import Produto from '../models/productModel.js';
+import { isAuth, isAdmin, mailgun, payOrderEmailTemplate } from '../utils.js';
+import Pedido from '../model/pedidoModel';
+
+const orderRouter = express.Router();
+
+orderRouter.get(
+  '/',
+  autent,
+  admin,
+  expressAsyncHandler(async (req, res) => {
+    const pedidos = await Pedido.find().populate('usuario', 'nome');
+    res.send(pedidos);
+  })
+);
+
+orderRouter.post(
+  '/',
+  autent,
+  expressAsyncHandler(async (req, res) => {
+    const newOrder = new Pedido({
+      itensPedido: req.body.itensPedido.map((x) => ({ ...x, product: x._id })),
+      enderecoEntrega: req.body.enderecoEntrega,
+      formaPagamento: req.body.formaPagamento,
+      precoItens: req.body.precoItens,
+      entregaPreco: req.body.shippingPrice,
+      taxPrice: req.body.taxPrice,
+      precoTotal: req.body.totalPrice,
+      usuario: req.user._id,
+    });
+
+    const pedido = await newOrder.save();
+    res.status(201).send({ message: 'Novo Pedido Criado', pedido });
+  })
+);
+
+orderRouter.get(
+  '/summary',
+  autent,
+  admin,
+  expressAsyncHandler(async (req, res) => {
+    const pedidos = await Pedido.aggregate([
+      {
+        $group: {
+          _id: null,
+          numOrders: { $sum: 1 },
+          totalSales: { $sum: '$totalPrice' },
+        },
+      },
+    ]);
+    const users = await User.aggregate([
+      {
+        $group: {
+          _id: null,
+          numUsers: { $sum: 1 },
+        },
+      },
+    ]);
+    const dailyOrders = await Order.aggregate([
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          orders: { $sum: 1 },
+          sales: { $sum: '$totalPrice' },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    const categoriaProduto = await Produto.aggregate([
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    res.send({ users, orders, dailyOrders, categoriaProduto });
+  })
+);
+
+orderRouter.get(
+  '/mine',
+  isAuth,
+  expressAsyncHandler(async (req, res) => {
+    const pedidos = await Pedido.find({ user: req.user._id });
+    res.send(orders);
+  })
+);
+
+orderRouter.get(
+  '/:id',
+  isAuth,
+  expressAsyncHandler(async (req, res) => {
+    const Pedido = await Pedido.findById(req.params.id);
+    if (pedido) {
+      res.send(pedido);
+    } else {
+      res.status(404).send({ message: 'Pedido Não Encontrado' });
+    }
+  })
+);
+
+orderRouter.put(
+  '/:id/deliver',
+  autent,
+  expressAsyncHandler(async (req, res) => {
+    const pedido = await Pedido.findById(req.params.id);
+    if (Pedido) {
+      pedodo.isDelivered = true;
+      pedidp.deliveredAt = Date.now();
+      await pedido.save();
+      res.send({ message: 'Pedido Entregue' });
+    } else {
+      res.status(404).send({ message: 'Pedido Não Encontrado' });
+    }
+  })
+);
+
+orderRouter.put(
+  '/:id/pay',
+  autent,
+  expressAsyncHandler(async (req, res) => {
+    const pedido = await Pedido.findById(req.params.id).populate(
+      'usuario',
+      'email'
+    );
+    if (pedido) {
+      pedido.isPaid = true;
+      pedido.paidAt = Date.now();
+      pedido.paymentResult = {
+        id: req.body.id,
+        status: req.body.status,
+        update_time: req.body.update_time,
+        email: req.body.email,
+      };
+
+      const updatedOrder = await pedido.save();
+      mailgun()
+        .messages()
+        .send(
+          {
+            de: 'Biblioteca Virtual <bibliotecavirtual@livro.com.br>',
+            para: `${order.user.name} <${order.user.email}>`,
+            assunto: `New order ${order._id}`,
+            html: payOrderEmailTemplate(order),
+          },
+          (error, body) => {
+            if (error) {
+              console.log(error);
+            } else {
+              console.log(body);
+            }
+          }
+        );
+
+      res.send({ message: 'Pedido Pago', pedido: updatedOrder });
+    } else {
+      res.status(404).send({ message: 'Pedido Não Encontrado' });
+    }
+  })
+);
+
+orderRouter.delete(
+  '/:id',
+  autent,
+  admin,
+  expressAsyncHandler(async (req, res) => {
+    const pedido = await Pedido.findById(req.params.id);
+    if (pedido) {
+      await pedido.remove();
+      res.send({ message: 'Pedido Deletado' });
+    } else {
+      res.status(404).send({ message: 'Pedido Não Encontrado' });
+    }
+  })
+);
+
+export default orderRouter;
