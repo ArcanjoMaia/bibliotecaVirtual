@@ -14,10 +14,11 @@ const reviewSchema = new mongoose.Schema(
 const productSchema = new mongoose.Schema(
   {
     nome: { type: String, required: true, unique: true },
+    /*uma parte de um URL que identifica uma página específica em um site em um formato legível pelos usuários. */
     slug: { type: String, required: true, unique: true },
     imagem: { type: String, required: true },
     imagens: [String],
-    brand: { type: String, required: true },
+    autor: { type: String, required: true },
     categoria: { type: String, required: true },
     descricao: { type: String, required: true },
     preco: { type: Number, required: true },
@@ -31,5 +32,5 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-const Produto = mongoose.model('Product', productSchema);
+const Produto = mongoose.model('Produto', productSchema);
 export default Produto;
