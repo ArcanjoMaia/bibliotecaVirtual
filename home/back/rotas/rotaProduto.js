@@ -235,4 +235,4 @@ rotaProduto.get('/:id', async (req, res) => {
   }
 });
 
-export default productRouter;
+export default rotaProduto;
