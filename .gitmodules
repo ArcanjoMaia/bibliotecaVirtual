@@ -1,0 +1,3 @@
+[submodule "bibliotecaVirtual"]
+	path = bibliotecaVirtual
+	url = https://github.com/ArcanjoMaia/bibliotecaVirtual.git
